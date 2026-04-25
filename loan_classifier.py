@@ -111,7 +111,7 @@ if st.button("📊 Predict Probability", use_container_width=True):
     
     # Visual feedback based on probability
     if prob >= 0.8:
-        st.success(f"**High Probability of Fully Paying the Loan:**")
+        st.success(f"**High Probability of Fully Paying the Loan**")
         st.balloons()
     else:
-        st.error(f"**Will Charge Off the Loan:**")
+        st.error(f"**Will Charge Off the Loan**")
