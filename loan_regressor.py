@@ -170,21 +170,37 @@ if input_mode == "Single JSON Entry":
 else:
     st.subheader("📂 Batch Analysis")
     uploaded_file = st.file_uploader("Upload CSV Data", type=["csv"])
-    if uploaded_file and st.button("📈 Run Batch Prediction", use_container_width=True):
+   if st.button("📈 Run Single Prediction", use_container_width=True):
         if regressor_model and regressor_scaler:
-            df = pd.read_csv(uploaded_file)
-            missing = [f for f in manual_features if f not in df.columns]
-            
-            if missing:
-                st.error(f"Missing {len(missing)} required features in CSV.")
-            else:
-                scaled_df = regressor_scaler.transform(df[manual_features])
-                preds = regressor_model.predict(scaled_df)
+            try:
+                data = json.loads(user_input_json)
+                raw_values = [data[f] for f in manual_features]
+                input_df = pd.DataFrame([raw_values], columns=manual_features)
                 
-                df['predicted_return'] = preds
-                st.write("**Recent Predictions:**")
-                st.dataframe(df[['predicted_return']].head(), use_container_width=True)
-                st.download_button("📥 Download Results", df.to_csv(index=False), "bison_predictions.csv")
+                # Apply Scaling
+                scaled_values = regressor_scaler.transform(input_df)
+                prediction = regressor_model.predict(scaled_values)[0]
+                
+                st.markdown("---")
+                st.subheader("🎯 Bison Investment Analysis")
+                
+                # Metric and Recommendation columns
+                res_col1, res_col2 = st.columns(2)
+                with res_col1:
+                    st.metric(label="Pessimistic Return Score", value=f"{prediction:.4f}")
+                
+                with res_col2:
+                    if prediction > 0:
+                        st.success("✅ **ACTION: APPROVE**")
+                    else:
+                        st.error("❌ **ACTION: DENY**")
+
+                # Detailed text
+                if prediction > 0:
+                    st.info(f"The model predicts a positive return of {prediction:.4f}. This loan meets the criteria.")
+                    st.balloons()
+                else:
+                    st.warning(f"The model predicts a negative return of {prediction:.4f}. Do not approve.")
 
 # --- Asset Guard ---
 if regressor_model is None or regressor_scaler is None:
