@@ -137,6 +137,7 @@ manual_features = [
 ]
 
 # --- UI Layout ---
+# --- UI Layout ---
 col1, col2 = st.columns([1, 2])
 
 with col1:
@@ -150,27 +151,8 @@ if input_mode == "Single JSON Entry":
                                    height=300, 
                                    placeholder='{"term_months": 36, "fico_high": 720, ...}')
     
+    # --- This is the part that caused the error; check the spaces below! ---
     if st.button("📈 Run Single Prediction", use_container_width=True):
-        if regressor_model and regressor_scaler:
-            try:
-                data = json.loads(user_input_json)
-                raw_values = [data[f] for f in manual_features]
-                input_df = pd.DataFrame([raw_values], columns=manual_features)
-                
-                # Apply Scaling
-                scaled_values = regressor_scaler.transform(input_df)
-                prediction = regressor_model.predict(scaled_values)[0]
-                
-                st.success(f"**Predicted Return Score: {round(float(prediction), 4)}**")
-            except Exception as e:
-                st.error(f"Error: {e}")
-        else:
-            st.error("Model or Scaler not loaded.")
-
-else:
-    st.subheader("📂 Batch Analysis")
-    uploaded_file = st.file_uploader("Upload CSV Data", type=["csv"])
-   if st.button("📈 Run Single Prediction", use_container_width=True):
         if regressor_model and regressor_scaler:
             try:
                 data = json.loads(user_input_json)
@@ -201,6 +183,32 @@ else:
                     st.balloons()
                 else:
                     st.warning(f"The model predicts a negative return of {prediction:.4f}. Do not approve.")
+
+            except Exception as e:
+                st.error(f"Error: {e}")
+        else:
+            st.error("Model or Scaler not loaded.")
+
+else:
+    st.subheader("📂 Batch Analysis")
+    uploaded_file = st.file_uploader("Upload CSV Data", type=["csv"])
+    if uploaded_file and st.button("📈 Run Batch Prediction", use_container_width=True):
+        if regressor_model and regressor_scaler:
+            df = pd.read_csv(uploaded_file)
+            missing = [f for f in manual_features if f not in df.columns]
+            
+            if missing:
+                st.error(f"Missing {len(missing)} required features in CSV.")
+            else:
+                scaled_df = regressor_scaler.transform(df[manual_features])
+                preds = regressor_model.predict(scaled_df)
+                
+                df['predicted_return'] = preds
+                df['recommendation'] = np.where(df['predicted_return'] > 0, 'APPROVE', 'DENY')
+                
+                st.write("**Recent Predictions:**")
+                st.dataframe(df[['predicted_return', 'recommendation']].head(), use_container_width=True)
+                st.download_button("📥 Download Results", df.to_csv(index=False), "bison_predictions.csv")
 
 # --- Asset Guard ---
 if regressor_model is None or regressor_scaler is None:
