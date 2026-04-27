@@ -4,30 +4,72 @@ import numpy as np
 import pandas as pd
 import json
 
-# --- Page Configuration ---
-st.set_page_config(page_title="Pessimistic Return Regressor", layout="wide")
+# --- Bucknell Theme Config ---
+BUCKNELL_ORANGE = "#E87722"
+BUCKNELL_BLUE = "#003865"
 
-st.title("📊 Pessimistic Return Regressor")
-st.write("Input raw data below to get a standardized prediction.")
+st.set_page_config(page_title="Pessimistic Return Regressor", layout="wide", page_icon="📈")
+
+# Custom CSS for Bucknell Branding and Readability
+st.markdown(f"""
+    <style>
+    .stApp {{
+        background-color: #FFFFFF;
+    }}
+    /* Title and Subheaders */
+    h1, h2, h3 {{
+        color: {BUCKNELL_BLUE} !important;
+        font-family: 'Georgia', serif;
+    }}
+    /* Labels and Body text visibility */
+    label, p, .stMarkdown p {{
+        color: {BUCKNELL_BLUE} !important;
+        font-weight: 600;
+    }}
+    /* Button Styling */
+    div.stButton > button:first-child {{
+        background-color: {BUCKNELL_ORANGE};
+        color: white !important;
+        border: none;
+        font-weight: bold;
+    }}
+    div.stButton > button:first-child:hover {{
+        background-color: {BUCKNELL_BLUE};
+        color: white !important;
+        border: 1px solid {BUCKNELL_ORANGE};
+    }}
+    /* Dataframe and JSON Area Focus */
+    textarea {{
+        border: 2px solid {BUCKNELL_BLUE} !important;
+    }}
+    /* Radio Buttons */
+    div[data-testid="stMarkdownContainer"] p {{
+        font-size: 1.1rem;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- Header ---
+st.title("🦬 Bucknell: Pessimistic Return Regressor")
+st.write("**Bison Analytics Engine:** Input raw data below to get a standardized prediction.")
+st.divider()
 
 # --- Load Model and Scaler ---
 @st.cache_resource
 def load_assets():
     try:
         model = joblib.load("Pessimistic_Return_model.pkl")
-        # Ensure you have saved your scaler for this model!
+        # Updated to check for the scaler name you mentioned in the footer warning
         scaler = joblib.load("scaler_poly.pkl") 
         return model, scaler
     except Exception as e:
-        st.error(f"Error loading assets: {e}")
         return None, None
 
 regressor_model, regressor_scaler = load_assets()
 
-# --- Feature List (The 150+ features your model expects) ---
+# --- Feature List ---
 manual_features = [
    'term_months', 'fico_high', 'loan_amount interest_rate', 'loan_amount pub_rec', 
-   # ... (keeping your list order exactly as you provided)
    'loan_amount home_ownership_RENT', 'loan_amount loan_purpose_home_improvement', 
    'loan_amount loan_purpose_major_purchase', 'loan_amount loan_purpose_moving', 
    'loan_amount loan_purpose_other', 'loan_amount loan_purpose_small_business', 
@@ -98,53 +140,52 @@ manual_features = [
 col1, col2 = st.columns([1, 2])
 
 with col1:
-    st.subheader("Input Method")
-    input_mode = st.radio("Choose input method:", ["Manual Single Entry", "Batch CSV Upload"])
+    st.subheader("🛠️ Input Method")
+    input_mode = st.radio("Choose interaction type:", ["Single JSON Entry", "Batch CSV Upload"])
 
-if input_mode == "Manual Single Entry":
-    st.info("Ensure JSON contains raw (unscaled) values for all 150+ interaction features.")
+if input_mode == "Single JSON Entry":
+    st.info("Paste the raw JSON below. The Bison Engine will handle scaling and prediction.")
     
-    user_input_json = st.text_area("Paste Feature JSON here:", 
+    user_input_json = st.text_area("JSON Feature Vector:", 
                                    height=300, 
                                    placeholder='{"term_months": 36, "fico_high": 720, ...}')
     
-    if st.button("Predict Single"):
+    if st.button("📈 Run Single Prediction", use_container_width=True):
         if regressor_model and regressor_scaler:
             try:
                 data = json.loads(user_input_json)
-                # 1. Extract values into a list
                 raw_values = [data[f] for f in manual_features]
-                # 2. Convert to DataFrame
                 input_df = pd.DataFrame([raw_values], columns=manual_features)
-                # 3. SCALE the raw values
+                
+                # Apply Scaling
                 scaled_values = regressor_scaler.transform(input_df)
-                # 4. Predict
                 prediction = regressor_model.predict(scaled_values)[0]
                 
-                st.success(f"Predicted Return: **{round(float(prediction), 4)}**")
+                st.success(f"**Predicted Return Score: {round(float(prediction), 4)}**")
             except Exception as e:
-                st.error(f"Prediction Error: {e}")
+                st.error(f"Error: {e}")
+        else:
+            st.error("Model or Scaler not loaded.")
 
 else:
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
-    if uploaded_file and st.button("Predict CSV"):
+    st.subheader("📂 Batch Analysis")
+    uploaded_file = st.file_uploader("Upload CSV Data", type=["csv"])
+    if uploaded_file and st.button("📈 Run Batch Prediction", use_container_width=True):
         if regressor_model and regressor_scaler:
             df = pd.read_csv(uploaded_file)
-            
-            # Ensure columns match
             missing = [f for f in manual_features if f not in df.columns]
+            
             if missing:
-                st.error(f"CSV missing {len(missing)} features.")
+                st.error(f"Missing {len(missing)} required features in CSV.")
             else:
-                # 1. SCALE the entire CSV dataframe
                 scaled_df = regressor_scaler.transform(df[manual_features])
-                # 2. PREDICT
                 preds = regressor_model.predict(scaled_df)
                 
                 df['predicted_return'] = preds
-                st.write(df[['predicted_return']].head())
-                st.download_button("Download Predictions", df.to_csv(index=False), "predictions.csv")
+                st.write("**Recent Predictions:**")
+                st.dataframe(df[['predicted_return']].head(), use_container_width=True)
+                st.download_button("📥 Download Results", df.to_csv(index=False), "bison_predictions.csv")
 
-# --- Footer ---
+# --- Asset Guard ---
 if regressor_model is None or regressor_scaler is None:
-    st.warning("⚠️ Assets missing. Check for 'Pessimistic_Return_model.pkl' AND 'Pessimistic_Return_scaler.pkl'.")
+    st.sidebar.warning("⚠️ Files Missing: 'Pessimistic_Return_model.pkl' or 'scaler_poly.pkl'")
