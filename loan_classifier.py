@@ -3,44 +3,50 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# --- Bucknell Theme Config ---
+# --- Updated Bucknell Theme Config ---
 BUCKNELL_ORANGE = "#E87722"
 BUCKNELL_BLUE = "#003865"
 
-st.set_page_config(page_title="Bison Loan Predictor", layout="centered", page_icon="🦬")
-
-# Custom CSS for Bucknell Branding
 st.markdown(f"""
     <style>
-    /* Main background and text */
+    /* Main background */
     .stApp {{
-        background-color: #fdfdfd;
+        background-color: #FFFFFF;
     }}
+    
+    /* Force all widget labels to be visible (Dark Blue or Black) */
+    label, .stMarkdown p, .stSelectbox label, .stSlider label {{
+        color: {BUCKNELL_BLUE} !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Fix the text inside the sliders/inputs that was invisible */
+    div[data-baseweb="slider"] div {{
+        color: {BUCKNELL_ORANGE} !important;
+    }}
+    
     /* Headers */
     h1, h2, h3 {{
         color: {BUCKNELL_BLUE} !important;
         font-family: 'Georgia', serif;
     }}
-    /* Button Styling */
+
+    /* Button Styling - Orange with Blue hover */
     div.stButton > button:first-child {{
         background-color: {BUCKNELL_ORANGE};
-        color: white;
+        color: white !important;
         border: none;
-        border-radius: 5px;
-        font-weight: bold;
+        padding: 0.5rem 2rem;
     }}
+    
     div.stButton > button:first-child:hover {{
         background-color: {BUCKNELL_BLUE};
-        color: white;
-        border: 1px solid {BUCKNELL_ORANGE};
+        color: white !important;
     }}
-    /* Slider and Widget Colors */
-    .stSlider [data-baseweb="slider"] {{
-        background-color: {BUCKNELL_BLUE};
-    }}
-    /* Sidebar or lines */
-    hr {{
-        border: 1px solid {BUCKNELL_BLUE};
+
+    /* Customize the slider track color to Bucknell Blue */
+    .stSlider [data-baseweb="slider"] > div > div {{
+        background: {BUCKNELL_BLUE} !important;
     }}
     </style>
     """, unsafe_allow_html=True)
