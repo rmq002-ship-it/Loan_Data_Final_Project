@@ -50,6 +50,51 @@ st.markdown(f"""
     }}
     </style>
     """, unsafe_allow_html=True)
+st.markdown(f"""
+    <style>
+    .stApp {{
+        background-color: #FFFFFF;
+    }}
+    
+    /* Title and Subheaders */
+    h1, h2, h3 {{
+        color: {BUCKNELL_BLUE} !important;
+        font-family: 'Georgia', serif;
+    }}
+    
+    /* Force ALL labels and main text to Bucknell Blue */
+    label, p, .stMarkdown p {{
+        color: {BUCKNELL_BLUE} !important;
+        font-weight: 600 !important;
+    }}
+
+    /* FIX: Force text inside success/warning/info boxes to be dark blue */
+    div[data-testid="stNotification"] p {{
+        color: {BUCKNELL_BLUE} !important;
+        font-weight: 700 !important;
+    }}
+
+    /* Button Styling */
+    div.stButton > button:first-child {{
+        background-color: {BUCKNELL_ORANGE};
+        color: white !important;
+        border: none;
+        font-weight: bold;
+        padding: 0.5rem 2rem;
+    }}
+    
+    div.stButton > button:first-child:hover {{
+        background-color: {BUCKNELL_BLUE};
+        color: white !important;
+    }}
+
+    /* Textarea border visibility */
+    textarea {{
+        border: 2px solid {BUCKNELL_BLUE} !important;
+        color: #333333 !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 # --- Header Section ---
 st.title("🦬 Bucknell Loan Status Classifier")
