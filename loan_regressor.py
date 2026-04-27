@@ -16,7 +16,7 @@ def load_assets():
     try:
         model = joblib.load("Pessimistic_Return_model.pkl")
         # Ensure you have saved your scaler for this model!
-        scaler = joblib.load("scaler.pkl") 
+        scaler = joblib.load("scaler_poly.pkl") 
         return model, scaler
     except Exception as e:
         st.error(f"Error loading assets: {e}")
