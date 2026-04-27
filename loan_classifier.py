@@ -195,18 +195,49 @@ if f"verification_status_{ver_stat}" in encoded_data: encoded_data[f"verificatio
 if f"loan_purpose_{purpose}" in encoded_data: encoded_data[f"loan_purpose_{purpose}"] = 1.0
 
 # --- 3. Prediction ---
+# --- 3. Prediction & Recommended Action ---
 if st.button("📊 Calculate Bison Score", use_container_width=True):
+    # Prepare data
     input_vector = np.array([[encoded_data[f] for f in original_features]])
     input_df = pd.DataFrame(input_vector, columns=original_features)
     scaled_vector = scaler.transform(input_df)
     
+    # Get Probability
     prob = model.predict_proba(scaled_vector)[0][1]
     
     st.markdown("---")
-    st.subheader("Results")
+    st.subheader("🎯 Analysis Results")
     
+    # Create two columns for the Score and the Action
+    res_col1, res_col2 = st.columns(2)
+    
+    with res_col1:
+        st.metric(label="Full Repayment Probability", value=f"{prob:.2%}")
+
+    with res_col2:
+        if prob >= 0.8:
+            st.success("✅ **RECOMMENDED ACTION: APPROVE**")
+        else:
+            st.error("❌ **RECOMMENDED ACTION: DENY**")
+
+    # Detailed feedback box
     if prob >= 0.8:
-        st.success(f"**Approved! The model predicts the loan will be FULLY PAID (Prob: {prob:.2%})**")
+        st.info(f"**Bison Verdict:** This applicant shows a high likelihood ({prob:.2%}) of full repayment. The loan meets the university's risk threshold.")
         st.balloons()
     else:
-        st.warning(f"**High Risk: The model predicts the loan may CHARGE OFF (Prob: {prob:.2%})**")
+        st.warning(f"**Bison Verdict:** This loan is flagged as High Risk. There is a {(1-prob):.2%} chance of Charge Off. Approval is not recommended at this time.")
+
+# --- CSS Update for Recommendation Boxes ---
+st.markdown(f"""
+    <style>
+    /* Ensures the Success (Green) and Error (Red) boxes still use Bucknell Blue text for legibility */
+    div[data-testid="stNotification"] p {{
+        color: {BUCKNELL_BLUE} !important;
+        font-size: 1.1rem !important;
+    }}
+    /* Makes the metric label Bucknell Blue */
+    [data-testid="stMetricLabel"] p {{
+        color: {BUCKNELL_BLUE} !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
