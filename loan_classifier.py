@@ -3,22 +3,69 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# --- Page Config ---
-st.set_page_config(page_title="Loan Status Predictor", layout="centered")
-st.title("🏦 Loan Status Classifier")
-st.write("Easily predict the likelihood of a loan being fully paid.")
+# --- Bucknell Theme Config ---
+BUCKNELL_ORANGE = "#E87722"
+BUCKNELL_BLUE = "#003865"
+
+st.set_page_config(page_title="Bison Loan Predictor", layout="centered", page_icon="🦬")
+
+# Custom CSS for Bucknell Branding
+st.markdown(f"""
+    <style>
+    /* Main background and text */
+    .stApp {{
+        background-color: #fdfdfd;
+    }}
+    /* Headers */
+    h1, h2, h3 {{
+        color: {BUCKNELL_BLUE} !important;
+        font-family: 'Georgia', serif;
+    }}
+    /* Button Styling */
+    div.stButton > button:first-child {{
+        background-color: {BUCKNELL_ORANGE};
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+    }}
+    div.stButton > button:first-child:hover {{
+        background-color: {BUCKNELL_BLUE};
+        color: white;
+        border: 1px solid {BUCKNELL_ORANGE};
+    }}
+    /* Slider and Widget Colors */
+    .stSlider [data-baseweb="slider"] {{
+        background-color: {BUCKNELL_BLUE};
+    }}
+    /* Sidebar or lines */
+    hr {{
+        border: 1px solid {BUCKNELL_BLUE};
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- Header Section ---
+st.title("🦬 Bucknell Loan Status Classifier")
+st.write(f"**Ray Bucknell!** Use this tool to predict the likelihood of a loan being fully paid.")
+st.divider()
 
 # --- Load Model and Scaler ---
 @st.cache_resource
 def load_assets():
     # Ensure these filenames match your actual saved files!
     model = joblib.load("Discharge_model.pkl")
-    scaler = joblib.load("scaler.pkl") # <--- MAKE SURE THIS FILE EXISTS
+    scaler = joblib.load("scaler.pkl") 
     return model, scaler
 
-model, scaler = load_assets()
+# Wrapping in try-except in case files aren't found during initial setup
+try:
+    model, scaler = load_assets()
+except FileNotFoundError:
+    st.error("⚠️ Model or Scaler files not found. Please ensure 'Discharge_model.pkl' and 'scaler.pkl' are in the directory.")
+    st.stop()
 
-# --- Feature List (Must match training order exactly) ---
+# --- Feature List ---
 original_features = [
     'loan_amount', 'term_months', 'interest_rate', 'annual_inc', 'debt_to_income', 
     'fico_high', 'open_acc', 'pub_rec', 'delinq_2yrs', 'revol_bal', 'revol_util', 
@@ -36,7 +83,7 @@ original_features = [
     'loan_purpose_wedding'
 ]
 
-# --- 1. User Interface: Organized Inputs ---
+# --- 1. User Interface ---
 st.subheader("📝 Applicant & Loan Details")
 
 col1, col2 = st.columns(2)
@@ -56,8 +103,7 @@ with col2:
     delinq = st.number_input("Delinquencies (Last 2 yrs)", 0, 10, 0)
     revol_bal = st.number_input("Total Revolving Balance ($)", value=5000)
 
-st.divider()
-
+st.markdown("---")
 col3, col4 = st.columns(2)
 
 with col3:
@@ -76,10 +122,8 @@ with col4:
     ])
     ver_stat = st.selectbox("Verification Status", ["Not Verified", "Source Verified", "Verified"])
 
-# --- 2. Data Transformation (Automatic Encoding) ---
+# --- 2. Data Transformation ---
 encoded_data = {feat: 0.0 for feat in original_features}
-
-# Fill Numerical values
 encoded_data['loan_amount'] = float(loan_amount)
 encoded_data['term_months'] = float(term)
 encoded_data['interest_rate'] = float(int_rate)
@@ -100,24 +144,19 @@ if f"verification_status_{ver_stat}" in encoded_data: encoded_data[f"verificatio
 if f"loan_purpose_{purpose}" in encoded_data: encoded_data[f"loan_purpose_{purpose}"] = 1.0
 
 # --- 3. Prediction ---
-if st.button("📊 Predict Probability", use_container_width=True):
-    # Prepare array in exact order
+if st.button("📊 Calculate Bison Score", use_container_width=True):
     input_vector = np.array([[encoded_data[f] for f in original_features]])
-    
-    # --- CRUCIAL STEP: SCALE THE INPUT ---
-    # We must use a DataFrame here so the scaler has feature names if it was trained on them
     input_df = pd.DataFrame(input_vector, columns=original_features)
     scaled_vector = scaler.transform(input_df)
     
-    # Get Probability using SCALED data
     prob = model.predict_proba(scaled_vector)[0][1]
     
     st.markdown("---")
-    st.subheader("Prediction Result")
+    st.subheader("Results")
     
-    # Visual feedback
-    if prob >= 0.8: # Standard threshold is 0.5, adjusted your 0.8 logic if needed
-        st.success(f"**The model predicts the loan will be FULLY PAID (Prob: {prob:.2%})**")
+    if prob >= 0.8:
+        st.success(f"**Approved! The model predicts the loan will be FULLY PAID (Prob: {prob:.2%})**")
         st.balloons()
     else:
-        st.error(f"**The model predicts the loan will CHARGE OFF (Prob: {prob:.2%})**")
+        # Using a custom warning box for lower probabilities
+        st.warning(f"**High Risk: The model predicts the loan may CHARGE OFF (Prob:
