@@ -158,5 +158,4 @@ if st.button("📊 Calculate Bison Score", use_container_width=True):
         st.success(f"**Approved! The model predicts the loan will be FULLY PAID (Prob: {prob:.2%})**")
         st.balloons()
     else:
-        # Using a custom warning box for lower probabilities
-        st.warning(f"**High Risk: The model predicts the loan may CHARGE OFF (Prob:
+        st.warning(f"**High Risk: The model predicts the loan may CHARGE OFF (Prob: {prob:.2%})**")
