@@ -8,15 +8,17 @@ st.set_page_config(page_title="Loan Status Predictor", layout="centered")
 st.title("🏦 Loan Status Classifier")
 st.write("Easily predict the likelihood of a loan being fully paid.")
 
-# --- Load Model ---
+# --- Load Model and Scaler ---
 @st.cache_resource
-def load_model():
-    return joblib.load("Discharge_model.pkl")
+def load_assets():
+    # Ensure these filenames match your actual saved files!
+    model = joblib.load("Discharge_model.pkl")
+    scaler = joblib.load("scaler.pkl") # <--- MAKE SURE THIS FILE EXISTS
+    return model, scaler
 
-model = load_model()
+model, scaler = load_assets()
 
-# --- Helper Logic: Mapping Categories to the Model's Features ---
-# This list is exactly what your model expects
+# --- Feature List (Must match training order exactly) ---
 original_features = [
     'loan_amount', 'term_months', 'interest_rate', 'annual_inc', 'debt_to_income', 
     'fico_high', 'open_acc', 'pub_rec', 'delinq_2yrs', 'revol_bal', 'revol_util', 
@@ -75,7 +77,6 @@ with col4:
     ver_stat = st.selectbox("Verification Status", ["Not Verified", "Source Verified", "Verified"])
 
 # --- 2. Data Transformation (Automatic Encoding) ---
-# Initialize all features to 0
 encoded_data = {feat: 0.0 for feat in original_features}
 
 # Fill Numerical values
@@ -91,7 +92,7 @@ encoded_data['delinq_2yrs'] = float(delinq)
 encoded_data['revol_bal'] = float(revol_bal)
 encoded_data['revol_util'] = float(rev_util)
 
-# Set Categorical flags (One-Hot Encoding logic)
+# Set Categorical flags
 if f"grade_{grade}" in encoded_data: encoded_data[f"grade_{grade}"] = 1.0
 if f"employment_length_{emp_len}" in encoded_data: encoded_data[f"employment_length_{emp_len}"] = 1.0
 if f"home_ownership_{home}" in encoded_data: encoded_data[f"home_ownership_{home}"] = 1.0
@@ -103,15 +104,20 @@ if st.button("📊 Predict Probability", use_container_width=True):
     # Prepare array in exact order
     input_vector = np.array([[encoded_data[f] for f in original_features]])
     
-    # Get Probability
-    prob = model.predict_proba(input_vector)[0][1]
+    # --- CRUCIAL STEP: SCALE THE INPUT ---
+    # We must use a DataFrame here so the scaler has feature names if it was trained on them
+    input_df = pd.DataFrame(input_vector, columns=original_features)
+    scaled_vector = scaler.transform(input_df)
+    
+    # Get Probability using SCALED data
+    prob = model.predict_proba(scaled_vector)[0][1]
     
     st.markdown("---")
     st.subheader("Prediction Result")
     
-    # Visual feedback based on probability
-    if prob >= 0.8:
-        st.success(f"**High Probability of Fully Paying the Loan**")
+    # Visual feedback
+    if prob >= 0.5: # Standard threshold is 0.5, adjusted your 0.8 logic if needed
+        st.success(f"**The model predicts the loan will be FULLY PAID (Prob: {prob:.2%})**")
         st.balloons()
     else:
-        st.error(f"**Will Charge Off the Loan**")
+        st.error(f"**The model predicts the loan will CHARGE OFF (Prob: {prob:.2%})**")
