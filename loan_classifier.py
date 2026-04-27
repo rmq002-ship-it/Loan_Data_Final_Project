@@ -116,7 +116,7 @@ if st.button("📊 Predict Probability", use_container_width=True):
     st.subheader("Prediction Result")
     
     # Visual feedback
-    if prob >= 0.5: # Standard threshold is 0.5, adjusted your 0.8 logic if needed
+    if prob >= 0.8: # Standard threshold is 0.5, adjusted your 0.8 logic if needed
         st.success(f"**The model predicts the loan will be FULLY PAID (Prob: {prob:.2%})**")
         st.balloons()
     else:
